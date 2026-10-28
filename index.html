@@ -4,101 +4,55 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f8f6f1">
-  <meta
-    name="description"
-    content="A cozy little desk for student tasks, deadlines, and focused study."
-  >
-
+  <meta name="description" content="A cozy little desk for student tasks, deadlines, and focused study.">
   <title>braindump. — your little study desk</title>
-
   <link rel="stylesheet" href="style.css">
   <script src="script.js" defer></script>
 </head>
-
 <body>
-  <noscript>
-    <p>This desk needs JavaScript enabled to save tasks and run the timer.</p>
-  </noscript>
-
+  <noscript><p>This desk needs JavaScript enabled to save tasks and run the timer.</p></noscript>
   <div id="bd-preview">
     <header>
-      <div class="bd-brand">
-        braindump<span>.</span>
-        <span class="bd-logo-heart" aria-hidden="true">♡</span>
-      </div>
-
+      <div class="bd-brand">braindump<span>.</span> <span class="bd-logo-heart" aria-hidden="true">♡</span></div>
       <nav aria-label="Your spaces">
-        <button type="button" data-page="desk" aria-current="page">
-          my desk
-        </button>
+        <button type="button" data-page="desk" aria-current="page">my desk</button>
         <button type="button" data-page="planner">little planner</button>
         <button type="button" data-page="focus">focus room</button>
         <button type="button" data-page="corner">my corner</button>
       </nav>
     </header>
-
     <main>
-      <!-- Desk -->
-      <section
-        class="bd-page"
-        data-panel="desk"
-        aria-labelledby="bd-desk-title"
-      >
+      <section class="bd-page" data-panel="desk" aria-labelledby="bd-desk-title">
         <div class="bd-greeting">
           <div>
             <div class="bd-hand bd-welcome">hi, take a tiny breath.</div>
             <h1 id="bd-desk-title">A little less on your mind.</h1>
-            <p class="bd-muted">
-              Drop your thoughts. Pick one thing. Go gently.
-            </p>
+            <p class="bd-muted">Drop your thoughts. Pick one thing. Go gently.</p>
           </div>
-
           <div class="bd-date bd-tag" hidden>
             <span id="bd-dayname"></span>
             <strong id="bd-date"></strong>
             <span class="bd-hand bd-date-note">one thing at a time ♡</span>
           </div>
         </div>
-
         <div class="bd-desk-grid">
           <div>
             <div class="bd-notebook">
               <span class="bd-tape" aria-hidden="true"></span>
-
               <div class="bd-row bd-spread">
                 <label for="bd-dump">what's on your mind?</label>
                 <span class="bd-notebook-heart" aria-hidden="true">♡</span>
               </div>
-
-              <textarea
-                id="bd-dump"
-                rows="6"
-                aria-describedby="bd-dump-hint"
-                placeholder="dear diary, today my brain is full of..."
-              ></textarea>
-
+              <textarea id="bd-dump" rows="6" aria-describedby="bd-dump-hint" placeholder="dear diary, today my brain is full of..."></textarea>
               <div class="bd-row bd-spread">
-                <span id="bd-dump-hint" class="bd-small bd-muted">
-                  one thought per line
-                </span>
-                <button
-                  id="bd-untangle"
-                  class="bd-primary"
-                  type="button"
-                >
-                  make a little list ♡
-                </button>
+                <span id="bd-dump-hint" class="bd-small bd-muted">one thought per line</span>
+                <button id="bd-untangle" class="bd-primary" type="button">make a little list ♡</button>
               </div>
             </div>
           </div>
-
           <aside class="bd-side" aria-label="A little encouragement">
             <div class="bd-window">
-              <div
-                class="bd-scene"
-                role="img"
-                aria-label="An illustrated meadow with rolling hills"
-              >
+              <div class="bd-scene" role="img" aria-label="An illustrated meadow with rolling hills">
                 <span class="bd-sun"></span>
                 <span class="bd-cloud"></span>
                 <span class="bd-cloud two"></span>
@@ -108,124 +62,62 @@
                 <span class="bd-stem"></span>
                 <span class="bd-stem two"></span>
               </div>
-
               <div class="bd-windowbody">
-                <div>
-                  <span class="bd-small bd-muted">a little focus</span>
-                  <strong>25:00</strong>
-                </div>
+                <div><span class="bd-small bd-muted">a little focus</span><strong>25:00</strong></div>
                 <button id="bd-enter" type="button">let’s begin →</button>
               </div>
             </div>
-
             <div class="bd-pip-note">
               <div class="bd-pip" aria-hidden="true"></div>
-              <p id="bd-pip-message" aria-live="polite">
-                tiny steps count, too. ♡
-              </p>
+              <p id="bd-pip-message" aria-live="polite">tiny steps count, too. ♡</p>
             </div>
           </aside>
         </div>
-
-        <div
-          id="bd-review"
-          class="bd-review"
-          role="region"
-          aria-labelledby="bd-review-title"
-          hidden
-        >
+        <div id="bd-review" class="bd-review" role="region" aria-labelledby="bd-review-title" hidden>
           <h2 id="bd-review-title">A little less tangled.</h2>
-          <p class="bd-small bd-muted bd-review-help">
-            Check titles and dates before adding. Weekdays suggest the next
-            occurrence; unclear dates stay blank. Choose any missing dates below.
-          </p>
-
+          <p class="bd-small bd-muted bd-review-help">Check titles and dates before adding. Weekdays suggest the next occurrence; unclear dates stay blank. Choose any missing dates below.</p>
           <div id="bd-reviewitems"></div>
           <p id="bd-review-error" role="alert"></p>
-
           <div class="bd-row">
-            <button id="bd-confirm" class="bd-primary" type="button">
-              add to my desk
-            </button>
+            <button id="bd-confirm" class="bd-primary" type="button">add to my desk</button>
             <button id="bd-cancel" type="button">cancel</button>
             <button id="bd-delete" type="button" hidden>remove task</button>
           </div>
         </div>
-
         <div class="bd-taskheading">
-          <h2>
-            your little list
-            <span id="bd-taskcount" class="bd-count"></span>
-          </h2>
-
-          <div class="bd-row">
-            <button id="bd-add" type="button">+ add task</button>
-          </div>
+          <h2>your little list <span id="bd-taskcount" class="bd-count"></span></h2>
+          <div class="bd-row"><button id="bd-add" type="button">+ add task</button></div>
         </div>
-
         <div id="bd-tasks" class="bd-tasks"></div>
         <div id="bd-status" class="bd-toast" role="status"></div>
       </section>
-
-      <!-- Planner -->
-      <section
-        class="bd-page"
-        data-panel="planner"
-        aria-labelledby="bd-planner-title"
-        hidden
-      >
+      <section class="bd-page" data-panel="planner" aria-labelledby="bd-planner-title" hidden>
         <div class="bd-greeting">
           <div>
             <div class="bd-tag bd-muted bd-page-label">little planner</div>
             <h1 id="bd-planner-title">Your week, gently planned.</h1>
-            <p class="bd-muted">
-              A softer place to keep track of what's coming.
-            </p>
+            <p class="bd-muted">A softer place to keep track of what's coming.</p>
           </div>
         </div>
-
         <div class="bd-row bd-spread">
           <h2 id="bd-weektitle" aria-live="polite"></h2>
-
           <div class="bd-row">
-            <button
-              id="bd-prevweek"
-              type="button"
-              aria-label="Previous week"
-            >
-              ←
-            </button>
+            <button id="bd-prevweek" type="button" aria-label="Previous week">←</button>
             <button id="bd-thisweek" type="button">this week</button>
-            <button
-              id="bd-nextweek"
-              type="button"
-              aria-label="Next week"
-            >
-              →
-            </button>
+            <button id="bd-nextweek" type="button" aria-label="Next week">→</button>
           </div>
         </div>
-
         <div id="bd-week" class="bd-week"></div>
-
         <h2 class="bd-unscheduled-title">still finding their place</h2>
         <div id="bd-unscheduled" class="bd-row"></div>
       </section>
-
-      <!-- Focus room -->
-      <section
-        class="bd-page"
-        data-panel="focus"
-        aria-labelledby="bd-focus-title"
-        hidden
-      >
+      <section class="bd-page" data-panel="focus" aria-labelledby="bd-focus-title" hidden>
         <div class="bd-greeting">
           <div>
             <div class="bd-tag bd-muted bd-page-label">the rest can wait</div>
             <h1 id="bd-focus-title">Just you &amp; one little thing.</h1>
           </div>
         </div>
-
         <div id="bd-focus-scene" class="bd-focus" data-scene="meadow">
           <div class="bd-scene" aria-hidden="true">
             <span class="bd-sun"></span>
@@ -238,81 +130,28 @@
             <span class="bd-stem"></span>
             <span class="bd-stem two"></span>
           </div>
-
           <div class="bd-timercontent">
-            <p id="bd-focus-task" class="bd-hand">
-              a little space to concentrate
-            </p>
-
+            <p id="bd-focus-task" class="bd-hand">a little space to concentrate</p>
             <div class="bd-modes" role="group" aria-label="Timer mode">
-              <button type="button" data-minutes="25" aria-pressed="true">
-                focus
-              </button>
-              <button type="button" data-minutes="5" aria-pressed="false">
-                short break
-              </button>
-              <button type="button" data-minutes="15" aria-pressed="false">
-                long break
-              </button>
+              <button type="button" data-minutes="25" aria-pressed="true">focus</button>
+              <button type="button" data-minutes="5" aria-pressed="false">short break</button>
+              <button type="button" data-minutes="15" aria-pressed="false">long break</button>
             </div>
-
-            <div
-              id="bd-time"
-              class="bd-time"
-              role="timer"
-              aria-label="Time remaining"
-              aria-live="off"
-            >
-              25:00
-            </div>
-
+            <div id="bd-time" class="bd-time" role="timer" aria-label="Time remaining" aria-live="off">25:00</div>
             <div class="bd-row bd-timerbuttons">
-              <button
-                id="bd-timer-toggle"
-                class="bd-primary"
-                type="button"
-              >
-                start focusing
-              </button>
+              <button id="bd-timer-toggle" class="bd-primary" type="button">start focusing</button>
               <button id="bd-timer-reset" type="button">reset</button>
             </div>
-
-            <p id="bd-timer-message" class="bd-small" role="status">
-              nothing to rush. nowhere else to be.
-            </p>
+            <p id="bd-timer-message" class="bd-small" role="status">nothing to rush. nowhere else to be.</p>
           </div>
         </div>
-
-        <div
-          class="bd-row bd-scene-switch"
-          role="group"
-          aria-label="Focus scenery"
-        >
+        <div class="bd-row bd-scene-switch" role="group" aria-label="Focus scenery">
           <span class="bd-small bd-muted">take me to</span>
-          <button
-            type="button"
-            data-scenechoice="meadow"
-            aria-pressed="true"
-          >
-            sunny meadow
-          </button>
-          <button
-            type="button"
-            data-scenechoice="rainy"
-            aria-pressed="false"
-          >
-            rainy window
-          </button>
+          <button type="button" data-scenechoice="meadow" aria-pressed="true">sunny meadow</button>
+          <button type="button" data-scenechoice="rainy" aria-pressed="false">rainy window</button>
         </div>
       </section>
-
-      <!-- Preferences -->
-      <section
-        class="bd-page"
-        data-panel="corner"
-        aria-labelledby="bd-corner-title"
-        hidden
-      >
+      <section class="bd-page" data-panel="corner" aria-labelledby="bd-corner-title" hidden>
         <div class="bd-greeting">
           <div>
             <div class="bd-tag bd-muted bd-page-label">my corner</div>
@@ -320,47 +159,20 @@
             <p class="bd-muted">Your desk, your little rituals.</p>
           </div>
         </div>
-
         <div class="bd-settings">
           <h2>the little details</h2>
-
           <label for="bd-nickname">what should Pip call you?</label>
-          <input
-            id="bd-nickname"
-            name="nickname"
-            type="text"
-            autocomplete="nickname"
-            maxlength="30"
-            placeholder="your nickname"
-          >
-
-          <p id="bd-stationery-label" class="bd-setting-label">
-            pick your stationery
-          </p>
-          <div
-            class="bd-row bd-themes"
-            role="group"
-            aria-labelledby="bd-stationery-label"
-          >
-            <button type="button" data-theme="strawberry">
-              strawberry milk
-            </button>
-            <button type="button" data-theme="matcha">
-              matcha morning
-            </button>
+          <input id="bd-nickname" name="nickname" type="text" autocomplete="nickname" maxlength="30" placeholder="your nickname">
+          <p id="bd-stationery-label" class="bd-setting-label">pick your stationery</p>
+          <div class="bd-row bd-themes" role="group" aria-labelledby="bd-stationery-label">
+            <button type="button" data-theme="strawberry">strawberry milk</button>
+            <button type="button" data-theme="matcha">matcha morning</button>
           </div>
-
-          <button id="bd-saveprefs" class="bd-primary" type="button">
-            make it mine ♡
-          </button>
-
-          <p id="bd-prefstatus" class="bd-small bd-muted" role="status">
-            Your preferences save in this browser.
-          </p>
+          <button id="bd-saveprefs" class="bd-primary" type="button">make it mine ♡</button>
+          <p id="bd-prefstatus" class="bd-small bd-muted" role="status">Your preferences save in this browser.</p>
         </div>
       </section>
     </main>
-
     <footer>
       <span>a softer place to get things done. ♡</span>
       <span id="bd-storage-status" role="status">saved in this browser</span>
