@@ -1,13 +1,5 @@
 'use strict';
 
-/*
- * braindump. — plain browser JavaScript
- * Sections: dates, storage, tasks, planner, timer, preferences, startup.
- * No packages, build tools, API keys, or backend are needed.
- */
-
-// 1. DATE HELPERS
-// Use local calendar dates, not UTC, so deadlines do not move a day.
 function dateKey(date) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -28,8 +20,6 @@ function validDate(value) {
   return year >= 1900 && year <= 9999 && dateKey(date) === value;
 }
 
-// Only supported, unambiguous expressions get a suggested date.
-// Titles always retain the original words; the user confirms the suggestion.
 function parseDeadline(text, now = new Date()) {
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12);
   const markers = text.match(/\b(?:today|tomorrow|(?:next\s+)?(?:sunday|monday|tuesday|wednesday|thursday|friday|saturday))\b|\b\d{4}-\d{2}-\d{2}\b|\b\d{1,2}[\/-]\d{1,2}(?:[\/-]\d{2,4})?\b|\b(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s+\d{1,2}(?:,?\s+\d{4})?\b/gi) || [];
@@ -39,7 +29,6 @@ function parseDeadline(text, now = new Date()) {
   const iso = text.match(/\b(\d{4}-\d{2}-\d{2})\b/);
   if (iso) return validDate(iso[1]) ? iso[1] : '';
 
-  // Slashed dates can mean day/month or month/day. Leave them for the picker.
   if (/\b\d{1,2}[\/-]\d{1,2}(?:[\/-]\d{2,4})?\b/.test(text)) return '';
   if (/\btomorrow\b/i.test(text)) return dateKey(addDays(today, 1));
   if (/\btoday\b/i.test(text)) return dateKey(today);
@@ -47,7 +36,7 @@ function parseDeadline(text, now = new Date()) {
   const weekdays = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
   const weekday = text.match(/\b(next\s+)?(sunday|monday|tuesday|wednesday|thursday|friday|saturday)\b/i);
   if (weekday) {
-    // "Next Friday" has multiple interpretations; require an explicit date.
+
     if (weekday[1]) return '';
     const offset = (weekdays.indexOf(weekday[2].toLowerCase()) - today.getDay() + 7) % 7;
     return dateKey(addDays(today, offset));
@@ -59,7 +48,7 @@ function parseDeadline(text, now = new Date()) {
     const month = months.indexOf(named[1].slice(0, 3).toLowerCase());
     const year = named[3] ? Number(named[3]) : today.getFullYear();
     const candidate = `${year}-${String(month + 1).padStart(2, '0')}-${named[2].padStart(2, '0')}`;
-    // Do not silently assign next year when a yearless date has passed.
+
     if (!validDate(candidate) || (!named[3] && candidate < dateKey(today))) return '';
     return candidate;
   }
@@ -79,7 +68,6 @@ function remainingSeconds(timer, now = Date.now()) {
   return Math.max(0, Math.ceil((timer.endAt - now) / 1000));
 }
 
-// 2. APP STATE AND LOCAL SAVING
 const STORAGE_KEY = 'braindump-original-v1';
 const root = document.getElementById('bd-preview');
 const find = (selector) => root.querySelector(selector);
@@ -87,7 +75,7 @@ const findAll = (selector) => [...root.querySelectorAll(selector)];
 const originalTitle = document.title;
 
 let tasks = [];
-let settings = { nickname: '', theme: 'strawberry' };
+let settings = { nickname: '', theme: 'strawberry', scene: 'meadow' };
 let timer = {
   duration: 25 * 60,
   remaining: 25 * 60,
@@ -96,8 +84,11 @@ let timer = {
 };
 let drafts = [];
 let editingId = null;
+let reviewedDump = null;
 let weekOffset = 0;
 let previousTasks = null;
+let previousDump = null;
+let storageConflict = false;
 let currentPage = 'desk';
 let storageAvailable = true;
 
@@ -106,6 +97,11 @@ function storageMessage(message) {
 }
 
 function saveState() {
+  if (storageConflict) {
+    storageAvailable = false;
+    storageMessage('Another tab changed your saved desk. Copy any unsaved work before refreshing. Saving here is paused.');
+    return false;
+  }
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
       version: 1,
@@ -148,10 +144,11 @@ function loadState() {
         due: task.due,
         done: task.done === true
       }));
-    // Ignore duplicate IDs rather than making multiple tasks respond to one edit.
+
     tasks = tasks.filter((task, index) => tasks.findIndex(item => item.id === task.id) === index);
     settings.nickname = typeof saved.settings?.nickname === 'string' ? saved.settings.nickname.slice(0, 30) : '';
     settings.theme = saved.settings?.theme === 'matcha' ? 'matcha' : 'strawberry';
+    settings.scene = saved.settings?.scene === 'rainy' ? 'rainy' : 'meadow';
     if (typeof saved.draft === 'string') find('#bd-dump').value = saved.draft;
     const storedTimer = saved.timer;
     if (storedTimer && [300, 900, 1500].includes(storedTimer.duration) &&
@@ -176,7 +173,6 @@ function newId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
-// Create user text with textContent, never with innerHTML.
 function makeElement(tag, className, text) {
   const element = document.createElement(tag);
   if (className) element.className = className;
@@ -204,6 +200,7 @@ function deadlineLabel(value) {
 }
 
 function showPage(page) {
+  if (!['desk', 'planner', 'focus', 'corner'].includes(page)) return;
   currentPage = page;
   findAll('[data-panel]').forEach(panel => { panel.hidden = panel.dataset.panel !== page; });
   findAll('[data-page]').forEach(button => {
@@ -211,8 +208,13 @@ function showPage(page) {
     else button.removeAttribute('aria-current');
   });
   if (page === 'planner') renderPlanner();
-  // Move keyboard focus into the selected page without altering tab order.
-  find(`[data-panel="${page}"] h1`)?.scrollIntoView({ block: 'nearest' });
+
+  const heading = find(`[data-panel="${page}"] h1`);
+  if (heading) {
+    heading.tabIndex = -1;
+    heading.focus({ preventScroll: true });
+    heading.scrollIntoView({ block: 'nearest' });
+  }
 }
 
 function showStatus(message, offerUndo = false) {
@@ -222,7 +224,12 @@ function showStatus(message, offerUndo = false) {
     status.append(makeButton('undo', () => {
       if (!previousTasks) return;
       tasks = previousTasks;
+
+      if (previousDump !== null && !find('#bd-dump').value) {
+        find('#bd-dump').value = previousDump;
+      }
       previousTasks = null;
+      previousDump = null;
       updateTasks();
       showStatus('Back where it was.');
     }));
@@ -230,6 +237,7 @@ function showStatus(message, offerUndo = false) {
 }
 
 function rememberTasks() {
+  previousDump = null;
   previousTasks = tasks.map(task => ({ ...task }));
 }
 
@@ -239,7 +247,6 @@ function updateTasks() {
   saveState();
 }
 
-// 3. THE DESK: CREATE, PREVIEW, EDIT, COMPLETE, DELETE, UNDO
 function renderTasks() {
   const container = find('#bd-tasks');
   container.replaceChildren();
@@ -251,7 +258,7 @@ function renderTasks() {
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
     checkbox.checked = task.done;
-    checkbox.setAttribute('aria-label', 'Complete ' + task.title);
+    checkbox.setAttribute('aria-label', (task.done ? 'Mark incomplete: ' : 'Complete: ') + task.title);
     checkbox.addEventListener('change', () => {
       rememberTasks();
       task.done = checkbox.checked;
@@ -289,6 +296,7 @@ function loadSampleTasks() {
 }
 
 function editTask(task) {
+  reviewedDump = null;
   editingId = task.id;
   drafts = [{ ...task }];
   showPage('desk');
@@ -296,6 +304,7 @@ function editTask(task) {
 }
 
 function closeReview() {
+  reviewedDump = null;
   drafts = [];
   editingId = null;
   find('#bd-review').hidden = true;
@@ -342,11 +351,13 @@ function untangleThoughts() {
     return;
   }
   editingId = null;
+  reviewedDump = find('#bd-dump').value;
   drafts = lines.map(title => ({ title, original: title, due: parseDeadline(title), done: false }));
   renderReview();
 }
 
 function confirmTasks() {
+  if (!drafts.length) return;
   if (drafts.some(draft => !draft.title.trim() || draft.title.length > 250 || (draft.due && !validDate(draft.due)))) {
     find('#bd-review-error').textContent = 'Give each task a title and check its date.';
     return;
@@ -359,7 +370,10 @@ function confirmTasks() {
     tasks[index] = { ...tasks[index], ...draft, title: draft.title.trim(), subject: inferSubject(draft.title) };
   } else {
     tasks.push(...drafts.map(draft => ({ ...draft, id: newId(), title: draft.title.trim(), subject: inferSubject(draft.title) })));
-    find('#bd-dump').value = '';
+    if (reviewedDump !== null && find('#bd-dump').value === reviewedDump) {
+      previousDump = reviewedDump;
+      find('#bd-dump').value = '';
+    }
   }
   closeReview();
   updateTasks();
@@ -376,7 +390,6 @@ function deleteTask() {
   showStatus('Removed from your desk.', true);
 }
 
-// 4. WEEKLY PLANNER — always reads the same tasks as the desk.
 function renderPlanner() {
   const start = addDays(today(), -((today().getDay() + 6) % 7) + weekOffset * 7);
   const end = addDays(start, 6);
@@ -402,8 +415,6 @@ function renderPlanner() {
   if (!unscheduled.children.length) unscheduled.append(makeElement('p', 'bd-muted', 'Everything has a little place.'));
 }
 
-// 5. FOCUS TIMER
-// endAt is a timestamp: delayed background ticks do not make the clock drift.
 function paintTimer() {
   const remaining = remainingSeconds(timer);
   const minutes = String(Math.floor(remaining / 60)).padStart(2, '0');
@@ -421,9 +432,11 @@ function checkTimer() {
   if (timer.endAt !== null && remainingSeconds(timer) === 0) {
     timer.remaining = 0;
     timer.endAt = null;
-    find('#bd-timer-message').textContent = 'You showed up. Take a little break. ♡';
+    find('#bd-timer-message').textContent = timer.duration === 1500
+      ? 'You showed up. Take a little break. ♡'
+      : 'Break complete. Ready for one little thing?';
     find('#bd-pip-message').textContent = 'a little session, done. take a breath. ♡';
-    // A completed focus session never completes its task automatically.
+
     saveState();
   }
   paintTimer();
@@ -462,7 +475,13 @@ function focusOnTask(task) {
   showPage('focus');
 }
 
-// 6. NICKNAME, THEME, AND SCENERY
+function applyScene() {
+  find('#bd-focus-scene').dataset.scene = settings.scene;
+  findAll('[data-scenechoice]').forEach(button => {
+    button.setAttribute('aria-pressed', String(button.dataset.scenechoice === settings.scene));
+  });
+}
+
 function applyTheme(theme) {
   const matcha = theme === 'matcha';
   const palette = matcha
@@ -476,10 +495,10 @@ function updateGreeting() {
   find('#bd-pip-message').textContent = settings.nickname ? `oh, ${settings.nickname}, you’re here! ♡` : 'tiny steps count, too. ♡';
 }
 
-// 7. STARTUP AND EVENTS
 function startApp() {
   loadState();
   applyTheme(settings.theme);
+  applyScene();
   find('#bd-nickname').value = settings.nickname;
   updateGreeting();
   find('#bd-dayname').textContent = today().toLocaleDateString(undefined, { weekday: 'long' });
@@ -490,6 +509,7 @@ function startApp() {
   findAll('[data-page]').forEach(button => button.addEventListener('click', () => showPage(button.dataset.page)));
   find('#bd-untangle').addEventListener('click', untangleThoughts);
   find('#bd-add').addEventListener('click', () => {
+    reviewedDump = null;
     editingId = null;
     drafts = [{ title: '', original: '', due: '', done: false }];
     renderReview();
@@ -514,8 +534,9 @@ function startApp() {
     resetTimer();
   }));
   findAll('[data-scenechoice]').forEach(button => button.addEventListener('click', () => {
-    find('#bd-focus-scene').dataset.scene = button.dataset.scenechoice;
-    findAll('[data-scenechoice]').forEach(item => item.setAttribute('aria-pressed', String(item === button)));
+    settings.scene = button.dataset.scenechoice;
+    applyScene();
+    saveState();
   }));
   findAll('[data-theme]').forEach(button => button.addEventListener('click', () => {
     settings.theme = button.dataset.theme;
@@ -528,7 +549,6 @@ function startApp() {
     find('#bd-prefstatus').textContent = saveState() ? 'Your little corner is saved. ♡' : 'Applied for this visit. Browser saving is unavailable.';
   });
 
-  // Recalculate when returning to the tab, including after the device sleeps.
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) {
       checkTimer();
@@ -537,9 +557,12 @@ function startApp() {
     }
   });
   window.addEventListener('storage', event => {
-    if (event.key === STORAGE_KEY) storageMessage('Changed in another tab. Refresh before editing here to load its latest copy.');
+    if (event.storageArea === localStorage && (event.key === STORAGE_KEY || event.key === null)) {
+      storageConflict = true;
+      saveState();
+    }
   });
   setInterval(checkTimer, 1000);
 }
 
-startApp();
+if (root) startApp();
